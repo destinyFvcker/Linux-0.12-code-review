@@ -41,7 +41,7 @@ startup_32:
 	mov %ax,%es
 	mov %ax,%fs
 	mov %ax,%gs
-						# 设置各数据段寄存器
+						# 设置各段寄存器保存的段选择符都指向表中的第2个段描述符
 
 	lss _stack_start,%esp	# 表示_stack_start -> ss:esp，设置系统堆栈
 							# 这里是把_stack_start指针的段选择符和偏移量
@@ -150,7 +150,7 @@ check_x87:
 # 化过程中会替换安装那些真正实用的中断描述符项。
 setup_idt:
 	lea ignore_int,%edx		# lea指令的全称是"Load Effective Address",
-							# 器功能是将内存地址计算出来并加载到指定寄存器之中，
+							# 其功能是将内存地址计算出来并加载到指定寄存器之中，
 							# 而不是加载该内存地址处的内容
 							# 
 							# 这里就是将ingore_int的有效地址(偏移值)放到了edx寄存器之中
