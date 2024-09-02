@@ -171,29 +171,31 @@ int swap_out(void)
  */
 unsigned long get_free_page(void)
 {
-register unsigned long __res asm("ax");
+register unsigned long __res asm("ax");		// 定义一个名为__res的寄存器变量，并将其绑定到eax寄存器
 
 repeat:
-	__asm__("std ; repne ; scasb\n\t"
+	__asm__("std ; repne ; scasb\n\t"		// 设置方向标志位(内存此时从高到低位进行操作)，
+											// 然后逐字节扫描EDI指向的内存，寻找值为0的字节(AL == 0)
 		"jne 1f\n\t"
-		"movb $1,1(%%edi)\n\t"
-		"sall $12,%%ecx\n\t"
-		"addl %2,%%ecx\n\t"
-		"movl %%ecx,%%edx\n\t"
-		"movl $1024,%%ecx\n\t"
-		"leal 4092(%%edx),%%edi\n\t"
-		"rep ; stosl\n\t"
-		"movl %%edx,%%eax\n"
+		"movb $1,1(%%edi)\n\t"				// 这里在EDI寄存器上加一个1的偏移量是因为repne找到的是第一个不匹配的字节
+											// 那么等于0的字节是在这个字节的上面一位
+		"sall $12,%%ecx\n\t"				// 页面数*4K = 相对页面起始地址，sall = 算数左移
+		"addl %2,%%ecx\n\t"					// 再加上低端内存地址，得到页面实际物理起始地址
+		"movl %%ecx,%%edx\n\t"				// 将页面实际起始地址移动到edx寄存器
+		"movl $1024,%%ecx\n\t"				// 寄存器ecx置计数值1024
+		"leal 4092(%%edx),%%edi\n\t"		// 将4092+edx的位置移动到edi寄存器之中（指向该页面的末端）
+		"rep ; stosl\n\t"					// 将edi所指内存清零（也就是将该页面清零）
+		"movl %%edx,%%eax\n"				// 将页面起始地址移动到eax之中（返回值）
 		"1:"
 		:"=a" (__res)
 		:"0" (0),"i" (LOW_MEM),"c" (PAGING_PAGES),
 		"D" (mem_map+PAGING_PAGES-1)
 		:"di","cx","dx");
-	if (__res >= HIGH_MEMORY)
+	if (__res >= HIGH_MEMORY)				// 页面地址大于实际内存容量则重新寻找
 		goto repeat;
-	if (!__res && swap_out())
+	if (!__res && swap_out())				// 若没有得到空闲页面则执行交换处理，并重新查找
 		goto repeat;
-	return __res;
+	return __res;							// 返回空闲物理页面地址
 }
 
 void init_swapping(void)

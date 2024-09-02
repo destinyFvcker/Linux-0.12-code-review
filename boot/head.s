@@ -364,7 +364,8 @@ setup_paging:
 # 填写使用的方法是从最后一个页表的最后一项开始按倒退顺序填写。每一个页表中最后一项在表中 
 # 的位置是 1023*4 = 4092。因此最后一页的最后一项的位置就是$pg3+4092。
 	movl $pg3+4092,%edi
-	movl $0xfff007,%eax		/*  16Mb - 4096 + 7 (r/w user,p) */
+	movl $0xfff007,%eax		/*  16Mb - 4096 + 7 (r/w user,p) */ // 关于为什么这里要减去4096字节，
+							// 因为这是最后一个4Kb页面的起始地址
 	std						# 设置方向标志位(DF)=1，使stosl指令在写入时自动减少EDI的值，
 							# 从而使写操作从高地址到低地址进行(倒序填充页表)
 1:	stosl			/* fill pages backwards - more efficient :-) */
